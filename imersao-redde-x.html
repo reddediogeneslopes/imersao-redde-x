@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Imersão Redde X — Diagnóstico & Simulador</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --muted:#9fb0c6;
+      --text:#e9f0fb;
+      --accent:#ffd166;
+      --ok:#63e6be;
+      --warn:#ffd43b;
+      --bad:#ff6b6b;
+      --line:#1b2a3f;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(255,209,102,.12), transparent 55%),
+                  radial-gradient(900px 500px at 80% 0%, rgba(99,230,190,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:22px 16px 10px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    .brand{
+      display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+    }
+    .title{
+      font-size:20px; letter-spacing:.2px; margin:0;
+    }
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      line-height:1.35;
+      max-width:820px;
+    }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      border:1px solid var(--line);
+      padding:6px 10px;
+      border-radius:999px;
+      color:var(--muted);
+      font-size:12px;
+      background: rgba(13,20,32,.35);
+    }
+
+    .topbar{
+      max-width:1200px;
+      margin:0 auto;
+      padding: 0 16px 10px;
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+    }
+    .topbar .left, .topbar .right{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:16px;
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+    .card h2{
+      font-size:16px; margin:0 0 10px;
+    }
+    .grid{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    @media (max-width: 560px){
+      .grid{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    input, select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0d1420;
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus{border-color:rgba(255,209,102,.55)}
+    .divider{height:1px; background:var(--line); margin:14px 0}
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    button{
+      border:1px solid var(--line);
+      background:#0d1420;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button.primary{
+      border-color:rgba(255,209,102,.5);
+      background: linear-gradient(180deg, rgba(255,209,102,.22), rgba(255,209,102,.08));
+    }
+    button.ghost{ background: rgba(13,20,32,.35); }
+    button:hover{filter:brightness(1.08)}
+    .small{font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.35}
+    .hint{color:var(--muted); font-size:12px; line-height:1.35}
+    .kpi{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width:560px){.kpi{grid-template-columns:1fr}}
+    .k{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(13,20,32,.6);
+    }
+    .k .t{font-size:12px; color:var(--muted)}
+    .k .v{font-size:20px; font-weight:900; margin-top:6px}
+    .tag{
+      display:inline-block;
+      margin-top:8px;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background: rgba(13,20,32,.35);
+    }
+    .tag.ok{border-color:rgba(99,230,190,.45); color:var(--ok)}
+    .tag.warn{border-color:rgba(255,212,59,.45); color:var(--warn)}
+    .tag.bad{border-color:rgba(255,107,107,.45); color:var(--bad)}
+    .list{margin:10px 0 0; padding-left:18px; color:var(--text)}
+    .list li{margin:6px 0; color:var(--muted)}
+    .rank{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .rank .row{
+      display:flex; justify-content:space-between; gap:10px;
+      padding:10px 12px;
+      border-top:1px solid var(--line);
+      background: rgba(13,20,32,.55);
+      font-size:13px;
+    }
+    .rank .row:first-child{border-top:none}
+    .row b{color:var(--text)}
+    .checkgrid{
+      display:grid; grid-template-columns:1fr 1fr; gap:8px;
+      margin-top:8px;
+    }
+    @media (max-width:560px){.checkgrid{grid-template-columns:1fr}}
+    .chk{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background: rgba(13,20,32,.55);
+    }
+    .chk input{width:auto; margin-top:2px}
+
+    /* Presenter Mode (Telão) */
+    body.presenter header{padding-bottom:0}
+    body.presenter .wrap{grid-template-columns: 1fr;}
+    body.presenter #leftPanel{display:none;}
+    body.presenter .title{font-size:28px}
+    body.presenter .subtitle{font-size:16px}
+    body.presenter .card h2{font-size:20px}
+    body.presenter .k .v{font-size:28px}
+    body.presenter .rank .row{font-size:16px}
+    body.presenter .list li{font-size:15px}
+    body.presenter .topbar{
+      position:sticky; top:0; backdrop-filter: blur(8px);
+      background: rgba(11,15,20,.55);
+      border-bottom:1px solid var(--line);
+      padding-top:10px;
+      z-index:9
+    }
+
+    /* Print to PDF */
+    @media print{
+      body{background:#fff; color:#000;}
+      header, .topbar, #leftPanel, .footerPrintHide{display:none !important;}
+      .wrap{display:block; padding:0;}
+      .card{box-shadow:none; border:1px solid #ccc; background:#fff; color:#000}
+      .tag, .pill{border:1px solid #ccc; color:#000}
+      .k{border:1px solid #ddd; background:#fff}
+      .k .t{color:#444}
+      .list li{color:#111}
+      .rank .row{background:#fff}
+      .row b{color:#000}
+      .printTitle{display:block !important;margin:0 0 10px;font-size:18px;font-weight:900;}
+      .printSub{display:block !important;margin:0 0 14px;font-size:12px;color:#222;}
+    }
+    .printTitle, .printSub{display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div>
+        <h1 class="title">IMERSÃO REDDE X — Embalagens + IA</h1>
+        <p class="subtitle"><b>Redução de Perdas na Indústria de Embalagens</b><br/>
+        Como reduzir perdas e aumentar margem usando dados e inteligência artificial.</p>
+      </div>
+      <span class="pill">Preencha • Calcule • Decida</span>
+    </div>
+  </header>
+
+  <div class="topbar footerPrintHide">
+    <div class="left">
+      <button class="ghost" id="btnPresenter">Modo Telão</button>
+      <button class="ghost" id="btnParticipant">Modo Participante</button>
+      <button class="primary" id="btnCalcTop">Gerar resultado</button>
+      <button class="ghost" id="btnPdf">Exportar PDF</button>
+      <button class="ghost" id="btnResetTop">Limpar</button>
+    </div>
+    <div class="right">
+      <span class="pill" id="statusPill">Status: aguardando preenchimento</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <!-- LEFT: Inputs -->
+    <section class="card" id="leftPanel">
+      <h2>1) Simulador de perdas (impacto financeiro)</h2>
+      <div class="grid">
+        <div>
+          <label>Faturamento anual (R$)</label>
+          <input id="revAnnual" type="number" min="0" step="1000" placeholder="Ex: 40000000" />
+        </div>
+        <div>
+          <label>Nº de máquinas (linhas)</label>
+          <input id="machines" type="number" min="1" step="1" value="1"/>
+        </div>
+        <div>
+          <label>Turnos por dia</label>
+          <input id="shiftsPerDay" type="number" min="1" step="1" value="3"/>
+        </div>
+        <div>
+          <label>Percentual estimado de perda total (%)</label>
+          <input id="lossPct" type="number" min="0" max="40" step="0.1" placeholder="Ex: 3.0" />
+        </div>
+        <div>
+          <label>Tempo médio de parada não planejada (min/dia)</label>
+          <input id="downtimeMinDay" type="number" min="0" step="1" placeholder="Ex: 90" />
+        </div>
+        <div>
+          <label>R$/hora parada (opcional, deixa mais real)</label>
+          <input id="costPerHourStop" type="number" min="0" step="10" placeholder="Ex: 2500" />
+          <div class="hint">Se preencher, o cálculo usa paradas. Se não, usa % de perda sobre faturamento.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>2) Diagnóstico de Eficiência Operacional (EO)</h2>
+      <p class="small">Escala 1–5 (1 = não existe / 5 = maduro e constante). Resultado e ações saem na hora.</p>
+      <div class="grid" id="diagnostic"></div>
+
+      <div class="divider"></div>
+
+      <h2>3) Mapa de perdas (onde atacar primeiro)</h2>
+      <div class="grid">
+        <div>
+          <label>Setup: minutos por troca</label>
+          <input id="setupMin" type="number" min="0" step="1" placeholder="Ex: 35"/>
+        </div>
+        <div>
+          <label>Setup: trocas por dia</label>
+          <input id="setupChanges" type="number" min="0" step="1" placeholder="Ex: 6"/>
+        </div>
+        <div>
+          <label>Refugo (% do produzido)</label>
+          <input id="scrapPct" type="number" min="0" max="30" step="0.1" placeholder="Ex: 2.5"/>
+        </div>
+        <div>
+          <label>Microparadas (min/dia)</label>
+          <input id="microStopMinDay" type="number" min="0" step="1" placeholder="Ex: 45"/>
+        </div>
+        <div>
+          <label>Ociosidade por planejamento (% do dia)</label>
+          <input id="planningIdlePct" type="number" min="0" max="30" step="0.1" placeholder="Ex: 3.0"/>
+        </div>
+        <div>
+          <label>Demora para agir (dias) quando há desvio relevante</label>
+          <input id="decisionDelayDays" type="number" min="0" step="1" placeholder="Ex: 7"/>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>4) Estrutura mínima de dados (para BI e IA)</h2>
+      <p class="small">Marque o que sua empresa já captura com consistência. Isso muda o roadmap recomendado.</p>
+      <div class="checkgrid" id="dataChecklist"></div>
+
+      <div class="btns">
+        <button class="primary" id="btnCalc">Gerar resultado agora</button>
+        <button class="ghost" id="btnReset">Limpar</button>
+      </div>
+      <p class="small">Dica palco: faça um exemplo e mostre o ranking “onde atacar primeiro”.</p>
+    </section>
+
+    <!-- RIGHT: Results -->
+    <section class="card" id="rightPanel">
+      <div class="printTitle">IMERSÃO REDDE X — Diagnóstico Executivo (Resumo)</div>
+      <div class="printSub">Redução de Perdas na Indústria de Embalagens • Resultado estimado para priorização de decisão</div>
+
+      <h2>Resultado</h2>
+      <div id="resultHeader" class="tag warn">Preencha os campos e clique em “Gerar resultado”.</div>
+
+      <div class="kpi">
+        <div class="k">
+          <div class="t">Custo mensal estimado (perdas)</div>
+          <div class="v" id="kMonthly">—</div>
+          <div class="tag" id="kMonthlyTag">Estimativa</div>
+        </div>
+        <div class="k">
+          <div class="t">Custo anual estimado (perdas)</div>
+          <div class="v" id="kAnnual">—</div>
+          <div class="tag" id="kAnnualTag">Impacto anual</div>
+        </div>
+        <div class="k">
+          <div class="t">Impacto por máquina (ano)</div>
+          <div class="v" id="kPerMachine">—</div>
+          <div class="tag">Média</div>
+        </div>
+        <div class="k">
+          <div class="t">Impacto por turno (ano)</div>
+          <div class="v" id="kPerShift">—</div>
+          <div class="tag">Média</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>Diagnóstico EO</h2>
+      <div class="tag" id="eoLevel">—</div>
+      <ul class="list" id="eoActions"></ul>
+
+      <div class="divider"></div>
+
+      <h2>Onde atacar primeiro (prioridade por impacto)</h2>
+      <div class="rank" id="rankBox"></div>
+      <p class="small">* Estimativa rápida para decisão (não é auditoria contábil).</p>
+
+      <div class="divider"></div>
+
+      <h2>Roadmap recomendado (próximo passo lógico)</h2>
+      <ul class="list" id="roadmap"></ul>
+
+      <div class="divider"></div>
+
+      <h2>Lacunas críticas de dados (BI e IA)</h2>
+      <ul class="list" id="dataGaps"></ul>
+    </section>
+  </main>
+
+<script>
+  const BRL = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+  function n(v){ const x = Number(v); return Number.isFinite(x) ? x : 0; }
+  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+  const diagQuestions = [
+    { id:'q1',  text:'Apontamento diário por máquina/turno (não só mensal)?' },
+    { id:'q2',  text:'Paradas com causa registrada e padronizada (catálogo)?' },
+    { id:'q3',  text:'Setup medido (tempo real) e acompanhado com meta?' },
+    { id:'q4',  text:'Refugo medido por produto/máquina/turno com responsável?' },
+    { id:'q5',  text:'Ritual semanal com ações e responsáveis (execução real)?' },
+    { id:'q6',  text:'Integração ERP ↔ produção (ou exportação automática confiável)?' },
+    { id:'q7',  text:'Base histórica (mín. 12 meses) centralizada e confiável?' },
+    { id:'q8',  text:'Pouco retrabalho manual (planilhas não são “a verdade”)?' },
+    { id:'q9',  text:'Cadastros padronizados (produto/máquina/turno/motivos)?' },
+    { id:'q10', text:'Indicadores críticos em painel único (freq. definida)?' },
+    { id:'q11', text:'Desvio relevante: causa identificada em até 48h?' },
+    { id:'q12', text:'Metas por máquina/turno + acompanhamento de tendência?' },
+    { id:'q13', text:'Sabem o custo de 1 hora parada na linha?' },
+    { id:'q14', text:'Priorizam ações por impacto (Pareto de perdas)?' },
+    { id:'q15', text:'Investimentos (máquina/automação) com ROI calculado?' }
+  ];
+
+  const diagRoot = document.getElementById('diagnostic');
+  diagQuestions.forEach(q=>{
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <label>${q.text}</label>
+      <select id="${q.id}">
+        <option value="1">1 — Não existe</option>
+        <option value="2">2 — Muito fraco</option>
+        <option value="3" selected>3 — Parcial</option>
+        <option value="4">4 — Bom</option>
+        <option value="5">5 — Maduro</option>
+      </select>
+    `;
+    diagRoot.appendChild(wrap);
+  });
+
+  const dataItems = [
+    { id:'d1', text:'Produção por máquina/turno (quantidade e tempo)' },
+    { id:'d2', text:'Paradas (início/fim, motivo, máquina, turno)' },
+    { id:'d3', text:'Setup (início/fim, produto, máquina, equipe)' },
+    { id:'d4', text:'Refugo/qualidade (tipo, motivo, produto)' },
+    { id:'d5', text:'Matéria-prima (consumo real por lote)' },
+    { id:'d6', text:'Ordens/Lotes (rastreabilidade)' },
+    { id:'d7', text:'Cadastros padronizados (produto/máquina/turno)' },
+    { id:'d8', text:'Integração ERP ↔ produção (rotina confiável)' },
+    { id:'d9', text:'Histórico centralizado (mín. 12 meses)' },
+    { id:'d10', text:'Acesso fácil em painel/BI (uso recorrente)' }
+  ];
+
+  const dataRoot = document.getElementById('dataChecklist');
+  dataItems.forEach(it=>{
+    const el = document.createElement('div');
+    el.className = 'chk';
+    el.innerHTML = `
+      <input type="checkbox" id="${it.id}" />
+      <div>
+        <div style="font-weight:900; font-size:13px;">${it.text}</div>
+        <div class="hint">Marque se existe e é usado com consistência.</div>
+      </div>
+    `;
+    dataRoot.appendChild(el);
+  });
+
+  function calc(){
+    const statusPill = document.getElementById('statusPill');
+
+    const revAnnual = n(document.getElementById('revAnnual').value);
+    const machines = Math.max(1, Math.floor(n(document.getElementById('machines').value || 1)));
+    const shiftsPerDay = Math.max(1, Math.floor(n(document.getElementById('shiftsPerDay').value || 1)));
+    const lossPct = clamp(n(document.getElementById('lossPct').value) / 100, 0, 0.9);
+    const downtimeMinDay = n(document.getElementById('downtimeMinDay').value);
+    const costPerHourStop = n(document.getElementById('costPerHourStop').value);
+
+    let annualLoss = 0;
+    let lossBasis = '';
+    if (costPerHourStop > 0 && downtimeMinDay > 0){
+      const downtimeHoursYear = (downtimeMinDay / 60) * 365;
+      annualLoss = downtimeHoursYear * costPerHourStop;
+      lossBasis = 'Paradas: R$/hora × min/dia';
+    } else if (revAnnual > 0 && lossPct > 0){
+      annualLoss = revAnnual * lossPct;
+      lossBasis = '% de perda sobre faturamento';
+    } else if (revAnnual > 0){
+      annualLoss = revAnnual * 0.02;
+      lossBasis = 'Estimativa conservadora (2%) — ajuste o % de perda';
+    }
+
+    const monthlyLoss = annualLoss / 12;
+    const perMachineAnnual = annualLoss / machines;
+    const perShiftAnnual = annualLoss / (shiftsPerDay * 365);
+
+    let scoreSum = 0;
+    diagQuestions.forEach(q=> scoreSum += n(document.getElementById(q.id).value));
+    const scoreAvg = scoreSum / diagQuestions.length;
+
+    let level = '';
+    let levelTag = 'warn';
+    let actions = [];
+
+    if (scoreAvg < 2.25){
+      level = '1️⃣ Operação Reativa';
+      levelTag = 'bad';
+      actions = [
+        'Defina 5 indicadores mínimos e um dono por indicador (produção, refugo, setup, paradas, eficiência).',
+        'Padronize apontamentos (turno, máquina, produto, motivo).',
+        'Crie ritual semanal com ações, responsáveis e prazo.',
+        'Faça Pareto semanal e ataque 1 causa por vez (impacto > opinião).'
+      ];
+    } else if (scoreAvg < 3.25){
+      level = '2️⃣ Operação Controlada';
+      levelTag = 'warn';
+      actions = [
+        'Centralize dados (produção, paradas, setup, refugo) em uma base única.',
+        'Implante SLA de reação: desvio relevante precisa ter causa em 48h.',
+        'Reduza setup via padrão/SMED básico e comparação por turno.',
+        'Priorize pelo custo por minuto parado.'
+      ];
+    } else if (scoreAvg < 4.25){
+      level = '3️⃣ Operação Orientada por Dados';
+      levelTag = 'ok';
+      actions = [
+        'Automatize integrações (ERP↔produção) para eliminar retrabalho.',
+        'Dashboards por máquina/turno com atualização definida.',
+        'Alertas para desvios + ação imediata.',
+        'Prepare IA: histórico limpo + causas catalogadas.'
+      ];
+    } else {
+      level = '4️⃣ Operação Inteligente';
+      levelTag = 'ok';
+      actions = [
+        'IA em 1 linha crítica: anomalias, falhas, perdas e padrões de setup.',
+        'Alertas automáticos e recomendação de ação.',
+        'Simulação de cenários para planejamento e mix.',
+        'Governança avançada: catálogo de dados e ownership.'
+      ];
+    }
+
+    const setupMin = n(document.getElementById('setupMin').value);
+    const setupChanges = n(document.getElementById('setupChanges').value);
+    const scrapPct = clamp(n(document.getElementById('scrapPct').value)/100, 0, 0.9);
+    const microStopMinDay = n(document.getElementById('microStopMinDay').value);
+    const planningIdlePct = clamp(n(document.getElementById('planningIdlePct').value)/100, 0, 0.9);
+    const decisionDelayDays = n(document.getElementById('decisionDelayDays').value);
+
+    const assumedShiftHours = 8;
+    const plannedMinutesYear = shiftsPerDay * assumedShiftHours * 60 * 365;
+    const valuePerMinute = (costPerHourStop > 0)
+      ? (costPerHourStop / 60)
+      : ((revAnnual > 0 ? revAnnual : 0) / Math.max(1, plannedMinutesYear));
+
+    const setupMinDay = setupMin * setupChanges;
+    const setupAnnualImpact = setupMinDay * 365 * valuePerMinute;
+    const microAnnualImpact = microStopMinDay * 365 * valuePerMinute;
+    const planningAnnualImpact = revAnnual * planningIdlePct;
+    const scrapAnnualImpact = revAnnual * scrapPct;
+
+    const weeksDelay = decisionDelayDays / 7;
+    const decisionAnnualImpact = (revAnnual/12) * 0.004 * (weeksDelay * 12);
+
+    const buckets = [
+      { name:'Setup', value: setupAnnualImpact, note:'Min/troca × trocas/dia.' },
+      { name:'Refugo', value: scrapAnnualImpact, note:'% refugo (proxy em faturamento).' },
+      { name:'Microparadas', value: microAnnualImpact, note:'Min/dia de microparadas.' },
+      { name:'Planejamento', value: planningAnnualImpact, note:'Ociosidade por programação/material.' },
+      { name:'Decisão tardia', value: decisionAnnualImpact, note:'Custo da demora (proxy).' },
+    ].map(x=>({ ...x, value: Number.isFinite(x.value) ? x.value : 0 }));
+
+    buckets.sort((a,b)=>b.value - a.value);
+
+    const gaps = dataItems.filter(it => !document.getElementById(it.id).checked);
+
+    const roadmap = [];
+    if (gaps.length >= 6){
+      roadmap.push('Agora: padronizar apontamentos e garantir coleta diária (produção, paradas, setup, refugo).');
+      roadmap.push('Próximo: centralizar histórico (mín. 12 meses) e criar painel mínimo (5–8 indicadores).');
+      roadmap.push('Em seguida: dashboards por máquina/turno + Pareto de perdas + SLA de reação (48h).');
+      roadmap.push('Depois: IA em linha crítica (anomalias/falhas/perdas) com causas padronizadas.');
+    } else if (gaps.length >= 3){
+      roadmap.push('Agora: consolidar base única (produção, paradas, setup, refugo) com qualidade e histórico.');
+      roadmap.push('Próximo: dashboards industriais + alertas + priorização por custo (minuto parado).');
+      roadmap.push('Depois: IA pontual em gargalos (falhas, anomalias, otimização de setup).');
+    } else {
+      roadmap.push('Agora: dashboards + alertas + SLA de ação (o dado precisa virar decisão rápida).');
+      roadmap.push('Próximo: IA aplicada em gargalos com governança e ownership claros.');
+    }
+
+    const resultHeader = document.getElementById('resultHeader');
+    if (annualLoss <= 0){
+      resultHeader.className = 'tag warn';
+      resultHeader.textContent = 'Preencha faturamento e/ou % de perda (ou custo por hora parada + minutos/dia).';
+      statusPill.textContent = 'Status: faltam dados para calcular';
+    } else {
+      resultHeader.className = 'tag ok';
+      resultHeader.textContent = `Base do cálculo: ${lossBasis}.`;
+      statusPill.textContent = 'Status: resultado gerado';
+    }
+
+    document.getElementById('kMonthly').textContent = BRL.format(monthlyLoss || 0);
+    document.getElementById('kAnnual').textContent = BRL.format(annualLoss || 0);
+    document.getElementById('kPerMachine').textContent = BRL.format(perMachineAnnual || 0);
+    document.getElementById('kPerShift').textContent = BRL.format(perShiftAnnual || 0);
+
+    document.getElementById('kMonthlyTag').textContent =
+      (costPerHourStop > 0 && downtimeMinDay > 0) ? 'Estimativa por paradas' :
+      (revAnnual > 0 && lossPct > 0) ? 'Estimativa por % de perda' :
+      'Estimativa conservadora';
+    document.getElementById('kAnnualTag').textContent = 'Impacto anual';
+
+    const eoLevel = document.getElementById('eoLevel');
+    eoLevel.className = `tag ${levelTag}`;
+    eoLevel.textContent = `${level} • Nota média: ${scoreAvg.toFixed(2)} / 5`;
+
+    const eoActions = document.getElementById('eoActions');
+    eoActions.innerHTML = '';
+    actions.forEach(a=>{
+      const li = document.createElement('li');
+      li.textContent = a;
+      eoActions.appendChild(li);
+    });
+
+    const rankBox = document.getElementById('rankBox');
+    rankBox.innerHTML = '';
+    buckets.forEach((b, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div><b>${idx+1}. ${b.name}</b><div class="hint">${b.note}</div></div><div>${BRL.format(b.value)}</div>`;
+      rankBox.appendChild(row);
+    });
+
+    const roadmapEl = document.getElementById('roadmap');
+    roadmapEl.innerHTML = '';
+    roadmap.forEach(r=>{
+      const li = document.createElement('li');
+      li.textContent = r;
+      roadmapEl.appendChild(li);
+    });
+
+    const gapsEl = document.getElementById('dataGaps');
+    gapsEl.innerHTML = '';
+    if (gaps.length === 0){
+      const li = document.createElement('li');
+      li.textContent = 'Sem lacunas críticas marcadas. Próximo passo: alertas + IA em linhas críticas.';
+      gapsEl.appendChild(li);
+    } else {
+      gaps.slice(0, 10).forEach(g=>{
+        const li = document.createElement('li');
+        li.textContent = g.text;
+        gapsEl.appendChild(li);
+      });
+      if (gaps.length > 10){
+        const li = document.createElement('li');
+        li.textContent = `+ ${gaps.length - 10} outras lacunas...`;
+        gapsEl.appendChild(li);
+      }
+    }
+  }
+
+  function resetAll(){
+    ['revAnnual','lossPct','downtimeMinDay','costPerHourStop','setupMin','setupChanges','scrapPct','microStopMinDay','planningIdlePct','decisionDelayDays']
+      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('machines').value = 1;
+    document.getElementById('shiftsPerDay').value = 3;
+
+    diagQuestions.forEach(q=> document.getElementById(q.id).value = 3);
+    dataItems.forEach(it=> document.getElementById(it.id).checked = false);
+
+    document.getElementById('resultHeader').className = 'tag warn';
+    document.getElementById('resultHeader').textContent = 'Preencha os campos e clique em “Gerar resultado”.';
+    ['kMonthly','kAnnual','kPerMachine','kPerShift'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('eoLevel').className = 'tag warn';
+    document.getElementById('eoLevel').textContent = '—';
+    document.getElementById('eoActions').innerHTML = '';
+    document.getElementById('rankBox').innerHTML = '';
+    document.getElementById('roadmap').innerHTML = '';
+    document.getElementById('dataGaps').innerHTML = '';
+    document.getElementById('statusPill').textContent = 'Status: aguardando preenchimento';
+  }
+
+  function setPresenterMode(on){
+    document.body.classList.toggle('presenter', on);
+    localStorage.setItem('presenterMode', on ? '1' : '0');
+  }
+  const savedMode = localStorage.getItem('presenterMode') === '1';
+  setPresenterMode(savedMode);
+
+  document.getElementById('btnPresenter').addEventListener('click', ()=> setPresenterMode(true));
+  document.getElementById('btnParticipant').addEventListener('click', ()=> setPresenterMode(false));
+
+  document.getElementById('btnPdf').addEventListener('click', ()=>{
+    calc();
+    window.print();
+  });
+
+  document.getElementById('btnCalc').addEventListener('click', calc);
+  document.getElementById('btnCalcTop').addEventListener('click', calc);
+
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+  document.getElementById('btnResetTop').addEventListener('click', resetAll);
+
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter') calc();
+  });
+</script>
+
+<div class="footerPrintHide" style="max-width:1200px;margin:0 auto;padding:0 16px 24px;color:var(--muted);font-size:12px;line-height:1.35;">
+  <b>Nota:</b> Estimativa rápida para priorização executiva. Para números oficiais, validar com dados reais (produção, paradas, refugo, custos).
+</div>
+</body>
+</html>
